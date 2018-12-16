@@ -3,6 +3,7 @@ module TXMonad.StackSet
   , Workspace(..)
   , Screen(..)
   , Stack(..)
+  , new
   ) where
 
 import qualified Data.List as L (deleteBy, filter, find, nub, splitAt)
@@ -10,24 +11,24 @@ import qualified Data.List as L (deleteBy, filter, find, nub, splitAt)
 data StackSet i l a sid = StackSet
   { current :: Screen i l a sid
   , visible :: [Screen i l a sid]
-  , hidden :: [Workspace i l a]
+  , hidden  :: [Workspace i l a]
   } deriving (Show, Read, Eq)
 
 data Screen i l a sid = Screen
   { workspace :: Workspace i l a
-  , screen :: sid
+  , screen    :: sid
   } deriving (Show, Read, Eq)
 
 data Workspace i l a = Workspace
-  { tag :: i
+  { tag    :: i
   , layout :: l
-  , stack :: Maybe (Stack a)
+  , stack  :: Maybe (Stack a)
   } deriving (Show, Read, Eq)
 
 data Stack a = Stack
   { focus :: a
-  , up :: [a]
-  , down :: [a]
+  , up    :: [a]
+  , down  :: [a]
   } deriving (Show, Read, Eq)
 
 new :: (Integral s) => l -> [i] -> Int -> StackSet i l a s
