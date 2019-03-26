@@ -5,12 +5,14 @@ module TXMonad.Main
   ( txmonad
   ) where
 
+import           Control.Monad.Reader
+
 import           TXMonad.Core
 import           TXMonad.StackSet (new)
 import qualified TXMonad.StackSet as W
 
 txmonad :: (LayoutClass l Window, Read (l Window)) => TXConfig l -> IO ()
-txmonad conf = launch conf
+txmonad = launch
 
 launch :: (LayoutClass l Window, Read (l Window)) => TXConfig l -> IO ()
 launch initxmc = do
@@ -21,4 +23,10 @@ launch initxmc = do
          in new layout (padToLen (sd xmc) (workspaces xmc)) (sd xmc)
       cf = TXConf {config = xmc}
       st = TXState {windowset = initialWinset}
+  runTX cf st $ do forever $ prehandle =<< io getLine
   return ()
+  where
+    prehandle e = handleWithHook e
+
+handleWithHook :: String -> TX ()
+handleWithHook e = return ()

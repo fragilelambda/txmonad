@@ -4,7 +4,8 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 
 module TXMonad.Core
-  ( WindowSet
+  ( TX
+  , WindowSet
   , WindowSpace
   , WorkspaceId
   , Window
@@ -14,11 +15,16 @@ module TXMonad.Core
   , TXConfig(..)
   , LayoutClass(..)
   , Layout(..)
-  ) where
+  , runTX
+  , io
+  )
+where
+
+import           TXMonad.StackSet
 
 import           Control.Monad.Reader
 import           Control.Monad.State
-import           TXMonad.StackSet
+import           Data.Default
 
 data TXState = TXState
   { windowset :: WindowSet
@@ -51,18 +57,21 @@ newtype TX a =
   deriving (Functor, Monad, MonadIO, MonadState TXState, MonadReader TXConf)
 
 instance Applicative TX where
-  pure = return
+  pure  = return
   (<*>) = ap
 
 instance Semigroup a => Semigroup (TX a) where
   (<>) = liftM2 (<>)
 
 instance (Monoid a) => Monoid (TX a) where
-  mempty = return mempty
+  mempty  = return mempty
   mappend = liftM2 mappend
 
-runX :: TXConf -> TXState -> TX a -> IO (a, TXState)
-runX c st (TX a) = runStateT (runReaderT a c) st
+instance Default a => Default (TX a) where
+  def = return def
+
+runTX :: TXConf -> TXState -> TX a -> IO (a, TXState)
+runTX c st (TX a) = runStateT (runReaderT a c) st
 
 data Layout a =
   forall l. (LayoutClass l a, Read (l a)) =>
@@ -73,3 +82,6 @@ class Show (layout a) =>
   where
   description :: layout a -> String
   description = show
+
+io :: MonadIO m => IO a -> m a
+io = liftIO

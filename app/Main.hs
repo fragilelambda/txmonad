@@ -1,6 +1,6 @@
-module Main where
+module Main(main) where
 
-import Lib
+import TXMonad
 
 main :: IO ()
-main = someFunc
+main = txmonad def
