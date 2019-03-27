@@ -7,7 +7,8 @@ module TXMonad.Layout
   , Mirror(..)
   , Choose
   , (|||)
-  ) where
+  )
+where
 
 import           TXMonad.Core
 

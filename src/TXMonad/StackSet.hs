@@ -4,9 +4,16 @@ module TXMonad.StackSet
   , Screen(..)
   , Stack(..)
   , new
-  ) where
+  )
+where
 
-import qualified Data.List as L (deleteBy, filter, find, nub, splitAt)
+import qualified Data.List                     as L
+                                                ( deleteBy
+                                                , filter
+                                                , find
+                                                , nub
+                                                , splitAt
+                                                )
 
 data StackSet i l a sid = StackSet
   { current :: Screen i l a sid
@@ -33,6 +40,6 @@ data Stack a = Stack
 
 new :: (Integral s) => l -> [i] -> Int -> StackSet i l a s
 new l wids m = StackSet cur visi unseen
-  where
-    (seen, unseen) = L.splitAt m $ map (\i -> Workspace i l Nothing) wids
-    (cur:visi) = [Screen i s | (i, s) <- zip seen [0 ..]]
+ where
+  (seen, unseen) = L.splitAt m $ map (\i -> Workspace i l Nothing) wids
+  (cur : visi)   = [ Screen i s | (i, s) <- zip seen [0 ..] ]

@@ -1,6 +1,9 @@
-module Main(main) where
+module Main
+  ( main
+  )
+where
 
-import TXMonad
+import           TXMonad
 
 main :: IO ()
 main = txmonad def

@@ -1,19 +1,28 @@
 {-# LANGUAGE TypeFamilies #-}
 module TXMonad.Config
   ( Default(..)
+  , Event
   )
 where
 
 import           TXMonad.Core                  as TXMonad
-                                         hiding ( workspaces )
+                                         hiding ( workspaces
+                                                , handleEventHook
+                                                )
 
 import qualified TXMonad.Core                  as TXMonad
-                                                ( workspaces )
+                                                ( workspaces
+                                                , handleEventHook
+                                                )
 import           TXMonad.Layout
 import           Data.Default
+import           Data.Monoid
 
 workspaces :: [WorkspaceId]
 workspaces = map show [1 .. 9 :: Int]
+
+handleEventHook :: Event -> TX All
+handleEventHook _ = return (All True)
 
 layout = tiled ||| Mirror tiled ||| Full
  where
@@ -24,7 +33,8 @@ layout = tiled ||| Mirror tiled ||| Full
 
 instance (a ~ Choose Tall (Choose (Mirror Tall) Full)) =>
          Default (TXConfig a) where
-  def = TXConfig { TXMonad.workspaces = workspaces
-                 , TXMonad.layoutHook = layout
-                 , sd                 = 10
+  def = TXConfig { TXMonad.workspaces      = workspaces
+                 , TXMonad.layoutHook      = layout
+                 , TXMonad.handleEventHook = handleEventHook
+                 , TXMonad.sd              = 10
                  }
