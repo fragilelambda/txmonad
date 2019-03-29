@@ -12,6 +12,7 @@ import           TXMonad.Core
 import           TXMonad.Config
 import           TXMonad.StackSet               ( new )
 import           Data.Monoid                    ( getAll )
+import qualified Data.Map                      as M
 
 txmonad :: (LayoutClass l Window, Read (l Window)) => TXConfig l -> IO ()
 txmonad = launch
@@ -23,7 +24,7 @@ launch initxmc = do
       initialWinset =
         let padToLen n xs = take (max n (length xs)) $ xs ++ repeat ""
         in  new layout (padToLen (sd xmc) (workspaces xmc)) (sd xmc)
-      cf = TXConf { config = xmc }
+      cf = TXConf { config = xmc, keyActions = keys xmc xmc }
       st = TXState { windowset = initialWinset }
   runTX cf st $ do
     forever $ prehandle =<< io getLine
@@ -37,5 +38,6 @@ handleWithHook e = do
 
 handle :: Event -> TX ()
 handle e = do
-  io $ putStrLn e
+  ks <- asks keyActions
+  userCodeDef () $ whenJust (M.lookup e ks) id
   return ()

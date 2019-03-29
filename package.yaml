@@ -23,6 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - mtl
 - data-default
+- containers
 
 library:
   source-dirs: src

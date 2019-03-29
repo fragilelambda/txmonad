@@ -21,6 +21,7 @@ module TXMonad.Core
   , userCode
   , userCodeDef
   , whenTX
+  , whenJust
   , io
   )
 where
@@ -34,6 +35,7 @@ import           Data.Monoid
 import           Data.Maybe                     ( isJust
                                                 , fromMaybe
                                                 )
+import qualified Data.Map                      as M
 
 data TXState = TXState
   { windowset :: WindowSet
@@ -41,11 +43,13 @@ data TXState = TXState
 
 data TXConf = TXConf
   { config :: TXConfig Layout
+  , keyActions :: M.Map Event (TX ())
   }
 
 data TXConfig l = TXConfig
-  { layoutHook :: (l Window)
+  { layoutHook :: l Window
   , workspaces :: [String]
+  , keys :: TXConfig Layout -> M.Map Event (TX ())
   , sd         :: Int
   , handleEventHook:: Event -> TX All
   }
@@ -111,6 +115,9 @@ class Show (layout a) =>
 
 whenTX :: TX Bool -> TX () -> TX ()
 whenTX a f = a >>= \b -> when b f
+
+whenJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
+whenJust mg f = maybe (return ()) f mg
 
 io :: MonadIO m => IO a -> m a
 io = liftIO
