@@ -31,6 +31,7 @@ import           TXMonad.StackSet
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.Default
+import           Data.Matrix
 import           Data.Monoid
 import           Data.Maybe                     ( isJust
                                                 , fromMaybe
@@ -43,6 +44,8 @@ data TXState = TXState
 
 data TXConf = TXConf
   { config :: TXConfig Layout
+  , normalBorder :: Char
+  , focusedBorder :: Char
   , keyActions :: M.Map Event (TX ())
   }
 
@@ -60,7 +63,7 @@ type WindowSpace = Workspace WorkspaceId (Layout Window) Window
 
 type WorkspaceId = String
 
-type Window = String
+type Window = Matrix Char
 
 type Event = String
 
