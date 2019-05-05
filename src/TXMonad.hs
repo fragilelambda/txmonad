@@ -5,6 +5,6 @@ module TXMonad
   )
 where
 
-import           TXMonad.Main
-import           TXMonad.Core
 import           TXMonad.Config
+import           TXMonad.Core
+import           TXMonad.Main

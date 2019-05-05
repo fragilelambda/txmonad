@@ -31,30 +31,37 @@ import           TXMonad.StackSet
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.Default
-import           Data.Matrix
-import           Data.Monoid
-import           Data.Maybe                     ( isJust
-                                                , fromMaybe
-                                                )
 import qualified Data.Map                      as M
+import           Data.Matrix
+import           Data.Maybe                     ( fromMaybe
+                                                , isJust
+                                                )
+import           Data.Monoid
 
 data TXState = TXState
   { windowset :: WindowSet
   }
 
 data TXConf = TXConf
-  { config :: TXConfig Layout
-  , normalBorder :: Char
+  { config        :: TXConfig Layout
+  , normalBorder  :: Char
   , focusedBorder :: Char
-  , keyActions :: M.Map Event (TX ())
+  , keyActions    :: M.Map Event (TX ())
   }
 
 data TXConfig l = TXConfig
-  { layoutHook :: l Window
-  , workspaces :: [String]
-  , keys :: TXConfig Layout -> M.Map Event (TX ())
-  , sd         :: Int
-  , handleEventHook:: Event -> TX All
+  { layoutHook      :: l Window
+  , workspaces      :: [String]
+  , keys            :: TXConfig Layout -> M.Map Event (TX ())
+  , sd              :: Int
+  , handleEventHook :: Event -> TX All
+  }
+
+data Rectangle = Rectangle
+  { x      :: Int
+  , y      :: Int
+  , width  :: Int
+  , height :: Int
   }
 
 type WindowSet = StackSet WorkspaceId (Layout Window) Window ScreenId
@@ -113,6 +120,13 @@ data Layout a =
 class Show (layout a) =>
       LayoutClass layout a
   where
+  runLayout :: Workspace WorkspaceId (layout a) a -> Rectangle
+  doLayout ::
+       layout a
+    -> Rectangle
+    -> Stack a
+    -> TX ([(a, Rectangle)], Maybe (layout a))
+  pureLayout :: layout a -> Rectangle -> Stack a -> [(a, Rectangle)]
   description :: layout a -> String
   description = show
 

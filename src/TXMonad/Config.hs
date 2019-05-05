@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeFamilies #-}
+
 module TXMonad.Config
   ( Default(..)
   , Event
@@ -6,20 +7,20 @@ module TXMonad.Config
 where
 
 import           TXMonad.Core                  as TXMonad
-                                         hiding ( workspaces
-                                                , handleEventHook
+                                         hiding ( handleEventHook
                                                 , keys
+                                                , workspaces
                                                 )
 
+import           Data.Default
+import qualified Data.Map                      as M
+import           Data.Monoid
 import qualified TXMonad.Core                  as TXMonad
-                                                ( workspaces
-                                                , handleEventHook
+                                                ( handleEventHook
                                                 , keys
+                                                , workspaces
                                                 )
 import           TXMonad.Layout
-import           Data.Default
-import           Data.Monoid
-import qualified Data.Map                      as M
 
 workspaces :: [WorkspaceId]
 workspaces = map show [1 .. 9 :: Int]

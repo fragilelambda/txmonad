@@ -3,16 +3,15 @@ module TXMonad.Operations where
 import           TXMonad.Core
 import qualified TXMonad.StackSet              as W
 
-import           Data.Monoid                    ( Endo(..) )
-import           Data.List                      ( nub
+import           Data.List                      ( find
+                                                , nub
                                                 , (\\)
-                                                , find
                                                 )
 import           Data.Matrix
+import           Data.Monoid                    ( Endo(..) )
 
-import           Control.Monad.State
 import           Control.Monad.Reader
-
+import           Control.Monad.State
 
 manage :: Window -> TX ()
 manage w = do
@@ -24,12 +23,10 @@ windows :: (WindowSet -> WindowSet) -> TX ()
 windows f = do
   TXState { windowset = old }                        <- get
   TXConf { normalBorder = nbc, focusedBorder = fbc } <- ask
-
   whenJust (W.peek old) $ \otherw -> do
     let ws =
           W.modify' (\s -> s { W.focus = setWindowBorder (W.focus s) nbc }) old
     modify (\s -> s { windowset = ws })
-
   TXState { windowset = old } <- get
   let oldVisible =
         concatMap (W.integrate' . W.stack . W.workspace)
@@ -37,9 +34,7 @@ windows f = do
           : W.visible old
       ws         = f old
       newwindows = W.allWindows ws \\ W.allWindows old
-
   modify (\s -> s { windowset = ws })
-
   let tags_oldvisible =
         map (W.tag . W.workspace) $ W.current old : W.visible old
       gottenhidden = filter (flip elem tags_oldvisible . W.tag) $ W.hidden ws

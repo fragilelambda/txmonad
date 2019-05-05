@@ -12,16 +12,16 @@ module TXMonad.StackSet
   )
 where
 
-import           Data.Maybe                     ( listToMaybe
-                                                , isJust
-                                                , fromMaybe
-                                                )
 import qualified Data.List                     as L
                                                 ( deleteBy
                                                 , filter
                                                 , find
                                                 , nub
                                                 , splitAt
+                                                )
+import           Data.Maybe                     ( fromMaybe
+                                                , isJust
+                                                , listToMaybe
                                                 )
 
 data StackSet i l a sid = StackSet

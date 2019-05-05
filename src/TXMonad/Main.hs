@@ -8,11 +8,11 @@ where
 
 import           Control.Monad.Reader
 
-import           TXMonad.Core
-import           TXMonad.Config
-import           TXMonad.StackSet               ( new )
-import           Data.Monoid                    ( getAll )
 import qualified Data.Map                      as M
+import           Data.Monoid                    ( getAll )
+import           TXMonad.Config
+import           TXMonad.Core
+import           TXMonad.StackSet               ( new )
 
 txmonad :: (LayoutClass l Window, Read (l Window)) => TXConfig l -> IO ()
 txmonad = launch
