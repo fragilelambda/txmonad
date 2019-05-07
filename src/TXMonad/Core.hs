@@ -1,7 +1,9 @@
 {-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE TypeSynonymInstances       #-}
 
 module TXMonad.Core
   ( TX
@@ -16,6 +18,12 @@ module TXMonad.Core
   , TXConfig(..)
   , LayoutClass(..)
   , Layout(..)
+  , Typeable
+  , Message
+  , Rectangle(..)
+  , SomeMessage(..)
+  , LayoutMessages(..)
+  , fromMessage
   , runTX
   , catchTX
   , userCode
@@ -37,6 +45,7 @@ import           Data.Maybe                     ( fromMaybe
                                                 , isJust
                                                 )
 import           Data.Monoid
+import           Data.Typeable
 
 data TXState = TXState
   { windowset :: WindowSet
@@ -120,15 +129,59 @@ data Layout a =
 class Show (layout a) =>
       LayoutClass layout a
   where
-  runLayout :: Workspace WorkspaceId (layout a) a -> Rectangle
+  runLayout ::
+       Workspace WorkspaceId (layout a) a
+    -> Rectangle
+    -> TX ([(a, Rectangle)], Maybe (layout a))
+  runLayout (Workspace _ l ms) r = maybe (emptyLayout l r) (doLayout l r) ms
   doLayout ::
        layout a
     -> Rectangle
     -> Stack a
     -> TX ([(a, Rectangle)], Maybe (layout a))
+  doLayout l r s = return (pureLayout l r s, Nothing)
   pureLayout :: layout a -> Rectangle -> Stack a -> [(a, Rectangle)]
+  pureLayout _ r s = [(focus s, r)]
+  emptyLayout ::
+       layout a -> Rectangle -> TX ([(a, Rectangle)], Maybe (layout a))
+  emptyLayout _ _ = return ([], Nothing)
+  handleMessage :: layout a -> SomeMessage -> TX (Maybe (layout a))
+  handleMessage l = return . pureMessage l
+  pureMessage :: layout a -> SomeMessage -> Maybe (layout a)
+  pureMessage _ _ = Nothing
   description :: layout a -> String
   description = show
+
+instance Show (Layout a) where
+  show (Layout l) = show l
+
+instance LayoutClass Layout Window where
+  runLayout (Workspace i (Layout l) ms) r =
+    fmap (fmap Layout) `fmap` runLayout (Workspace i l ms) r
+  doLayout (Layout l) r s = fmap (fmap Layout) `fmap` doLayout l r s
+  emptyLayout (Layout l) r = fmap (fmap Layout) `fmap` emptyLayout l r
+  handleMessage (Layout l) = fmap (fmap Layout) . handleMessage l
+  description (Layout l) = description l
+
+class Typeable a =>
+      Message a
+
+
+data SomeMessage =
+  forall a. Message a =>
+            SomeMessage a
+
+fromMessage :: Message m => SomeMessage -> Maybe m
+fromMessage (SomeMessage m) = cast m
+
+instance Message Event
+
+data LayoutMessages
+  = Hide
+  | ReleaseResources
+  deriving (Typeable, Eq)
+
+instance Message LayoutMessages
 
 whenTX :: TX Bool -> TX () -> TX ()
 whenTX a f = a >>= \b -> when b f

@@ -5,6 +5,7 @@ module TXMonad.StackSet
   , Stack(..)
   , new
   , insertUp
+  , integrate
   , integrate'
   , modify'
   , allWindows
