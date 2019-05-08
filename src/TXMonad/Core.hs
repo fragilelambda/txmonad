@@ -23,9 +23,11 @@ module TXMonad.Core
   , Rectangle(..)
   , SomeMessage(..)
   , LayoutMessages(..)
+  , ScreenDetail(..)
   , fromMessage
   , runTX
   , catchTX
+  , runOnWorkSpaces
   , userCode
   , userCodeDef
   , whenTX
@@ -62,7 +64,7 @@ data TXConfig l = TXConfig
   { layoutHook      :: l Window
   , workspaces      :: [String]
   , keys            :: TXConfig Layout -> M.Map Event (TX ())
-  , sd              :: Int
+  , sd              :: [ScreenDetail]
   , handleEventHook :: Event -> TX All
   }
 
@@ -71,9 +73,10 @@ data Rectangle = Rectangle
   , y      :: Int
   , width  :: Int
   , height :: Int
-  }
+  } deriving (Eq, Show, Read)
 
-type WindowSet = StackSet WorkspaceId (Layout Window) Window ScreenId
+type WindowSet
+  = StackSet WorkspaceId (Layout Window) Window ScreenId ScreenDetail
 
 type WindowSpace = Workspace WorkspaceId (Layout Window) Window
 
@@ -86,6 +89,10 @@ type Event = String
 newtype ScreenId =
   S Int
   deriving (Eq, Ord, Show, Read, Enum, Num, Integral, Real)
+
+data ScreenDetail = SD
+  { screenRect :: Rectangle
+  } deriving (Eq, Show, Read)
 
 newtype TX a =
   TX (ReaderT TXConf (StateT TXState IO) a)
@@ -191,3 +198,13 @@ whenJust mg f = maybe (return ()) f mg
 
 io :: MonadIO m => IO a -> m a
 io = liftIO
+
+runOnWorkSpaces :: (WindowSpace -> TX WindowSpace) -> TX ()
+runOnWorkSpaces job = do
+  ws    <- gets windowset
+  h     <- mapM job $ hidden ws
+  c : v <-
+    mapM (\s -> (\w -> s { workspace = w }) <$> job (workspace s))
+    $ current ws
+    : visible ws
+  modify $ \s -> s { windowset = ws { current = c, visible = v, hidden = h } }

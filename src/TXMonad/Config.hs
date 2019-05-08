@@ -44,5 +44,5 @@ instance (a ~ Choose Tall (Choose (Mirror Tall) Full)) =>
                  , TXMonad.layoutHook      = layout
                  , TXMonad.keys            = keys
                  , TXMonad.handleEventHook = handleEventHook
-                 , TXMonad.sd              = 10
+                 , TXMonad.sd              = [SD (Rectangle 0 0 16 9)]
                  }

@@ -23,7 +23,7 @@ launch initxmc = do
   let layout = layoutHook xmc
       initialWinset =
         let padToLen n xs = take (max n (length xs)) $ xs ++ repeat ""
-        in  new layout (padToLen (sd xmc) (workspaces xmc)) (sd xmc)
+        in  new layout (padToLen (length $ sd xmc) (workspaces xmc)) (sd xmc)
       cf = TXConf { config = xmc, keyActions = keys xmc xmc }
       st = TXState { windowset = initialWinset }
   runTX cf st $ do
