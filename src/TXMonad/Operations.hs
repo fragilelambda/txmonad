@@ -1,6 +1,7 @@
 module TXMonad.Operations where
 
 import           TXMonad.Core
+import           TXMonad.Layout                 ( Full(..) )
 import qualified TXMonad.StackSet              as W
 
 import           Data.List                      ( find
@@ -13,54 +14,69 @@ import           Data.Monoid                    ( Endo(..) )
 import           Control.Monad.Reader
 import           Control.Monad.State
 
+addWindow :: TX ()
+addWindow = do
+  TXState { uniqueCnt = x } <- get
+  modify (\s -> s { uniqueCnt = x + 1 })
+  manage (show x)
+
+deleteWindow :: TX()
+deleteWindow = withFocused unmanage
+
 manage :: Window -> TX ()
 manage w = do
   let f ws = W.insertUp w ws
   g <- appEndo <$> userCodeDef (Endo id) (return (Endo id))
   windows (g . f)
 
+-- | unmanage. A window no longer exists, remove it from the window
+-- list, on whatever workspace it is.
+--
+unmanage :: Window -> TX ()
+unmanage = windows . W.delete
+
 windows :: (WindowSet -> WindowSet) -> TX ()
-windows f = do
-  TXState { windowset = old }                        <- get
-  TXConf { normalBorder = nbc, focusedBorder = fbc } <- ask
-  whenJust (W.peek old) $ \otherw -> do
-    let ws =
-          W.modify' (\s -> s { W.focus = setWindowBorder (W.focus s) nbc }) old
-    modify (\s -> s { windowset = ws })
-  TXState { windowset = old } <- get
-  let oldVisible =
-        concatMap (W.integrate' . W.stack . W.workspace)
-          $ W.current old
-          : W.visible old
-      ws         = f old
-      newwindows = W.allWindows ws \\ W.allWindows old
-  modify (\s -> s { windowset = ws })
-  let tags_oldvisible =
-        map (W.tag . W.workspace) $ W.current old : W.visible old
-      gottenhidden = filter (flip elem tags_oldvisible . W.tag) $ W.hidden ws
-  mapM_ (sendMessageWithNoRefresh Hide) gottenhidden
-  let allscreens = W.screens ws
-      summed_visible = scanl (++) [] $ map (W.integrate' . W.stack . W.workspace) allscreens
-  -- rects <- fmap concat $ forM (zip allscreens summed_visible) $ \ (w, vis) -> do
-  --   let wsp = W.workspace w
-  --       tiled = W.stack wsp
-  --       viewrect = w
-  return ()
+windows = modifyWindowSet
 
-setWindowBorder :: Window -> Char -> Window
-setWindowBorder w nbc =
-  mapRow f 0 . mapRow f row . mapCol f 0 . mapCol f col $ w
- where
-  row = nrows w - 1
-  col = ncols w - 1
-  f _ _ = nbc
-
-sendMessageWithNoRefresh :: Message a => a -> WindowSpace -> TX ()
-sendMessageWithNoRefresh a w =
-  handleMessage (W.layout w) (SomeMessage a)
-    `catchTX` return Nothing
-    >>=       updateLayout (W.tag w)
+printScreen :: TX ()
+printScreen = do
+  TXState { windowset = ws } <- get
+  let allScreens = W.screens ws
+  rects <- forM allScreens $ \w -> do
+    let wsp      = W.workspace w
+        n        = W.tag wsp
+        this     = W.view n ws
+        tiled    = W.stack . W.workspace . W.current $ this
+        viewrect = screenRect $ W.screenDetail w
+    (rs, ml') <- runLayout wsp { W.stack = tiled } viewrect
+    updateLayout n ml'
+    return rs
+  io $ print $ show rects
 
 updateLayout :: WorkspaceId -> Maybe (Layout Window) -> TX ()
 updateLayout i ml = whenJust ml $ \l -> runOnWorkSpaces
   $ \ww -> return $ if W.tag ww == i then ww { W.layout = l } else ww
+
+sendMessage :: Message a => a -> TX ()
+sendMessage a = do
+  w   <- W.workspace . W.current <$> gets windowset
+  ml' <- handleMessage (W.layout w) (SomeMessage a)
+  whenJust ml' $ \l' -> modifyWindowSet $ \ws -> ws
+    { W.current =
+      (W.current ws) { W.workspace = (W.workspace $ W.current ws)
+                       { W.layout = l'
+                       }
+                     }
+    }
+  return ()
+
+modifyWindowSet :: (WindowSet -> WindowSet) -> TX ()
+modifyWindowSet f = modify $ \xst -> xst { windowset = f (windowset xst) }
+
+-- | Return workspace visible on screen 'sc', or 'Nothing'.
+screenWorkspace :: ScreenId -> TX (Maybe WorkspaceId)
+screenWorkspace sc = withWindowSet $ return . W.lookupWorkspace sc
+
+-- | Apply an 'TX' operation to the currently focused window, if there is one.
+withFocused :: (Window -> TX ()) -> TX ()
+withFocused f = withWindowSet $ \w -> whenJust (W.peek w) f

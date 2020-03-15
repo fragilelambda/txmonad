@@ -6,6 +6,9 @@ module TXMonad.Layout
   , Tall(..)
   , Mirror(..)
   , Choose
+  , ChangeLayout(..)
+  , Resize(..)
+  , IncMasterN(..)
   , (|||)
   )
 where

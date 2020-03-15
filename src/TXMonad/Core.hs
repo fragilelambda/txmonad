@@ -33,6 +33,7 @@ module TXMonad.Core
   , whenTX
   , whenJust
   , io
+  , withWindowSet
   )
 where
 
@@ -51,7 +52,8 @@ import           Data.Typeable
 
 data TXState = TXState
   { windowset :: WindowSet
-  }
+  , uniqueCnt :: Int
+  } deriving (Show)
 
 data TXConf = TXConf
   { config        :: TXConfig Layout
@@ -82,13 +84,14 @@ type WindowSpace = Workspace WorkspaceId (Layout Window) Window
 
 type WorkspaceId = String
 
-type Window = Matrix Char
+type Window = String
 
 type Event = String
 
 newtype ScreenId =
   S Int
   deriving (Eq, Ord, Show, Read, Enum, Num, Integral, Real)
+  -- deriving (Eq, Ord, Show, Read, Enum, Num, Integral, Real)
 
 data ScreenDetail = SD
   { screenRect :: Rectangle
@@ -208,3 +211,7 @@ runOnWorkSpaces job = do
     $ current ws
     : visible ws
   modify $ \s -> s { windowset = ws { current = c, visible = v, hidden = h } }
+
+-- | Run a monadic action with the current stack set
+withWindowSet :: (WindowSet -> TX a) -> TX a
+withWindowSet f = gets windowset >>= f
