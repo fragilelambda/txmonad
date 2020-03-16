@@ -4,11 +4,12 @@ import           TXMonad.Core
 import           TXMonad.Layout                 ( Full(..) )
 import qualified TXMonad.StackSet              as W
 
+import           Data.Array
 import           Data.List                      ( find
+                                                , intercalate
                                                 , nub
                                                 , (\\)
                                                 )
-import           Data.Matrix
 import           Data.Monoid                    ( Endo(..) )
 
 import           Control.Monad.Reader
@@ -20,12 +21,12 @@ addWindow = do
   modify (\s -> s { uniqueCnt = x + 1 })
   manage (show x)
 
-deleteWindow :: TX()
+deleteWindow :: TX ()
 deleteWindow = withFocused unmanage
 
 manage :: Window -> TX ()
 manage w = do
-  let f ws = W.insertUp w ws
+  let f = W.insertUp w
   g <- appEndo <$> userCodeDef (Endo id) (return (Endo id))
   windows (g . f)
 
@@ -37,6 +38,44 @@ unmanage = windows . W.delete
 
 windows :: (WindowSet -> WindowSet) -> TX ()
 windows = modifyWindowSet
+
+screenString :: ([(Window, Rectangle)], WindowScreen) -> String
+screenString (rect, w) = unlines $ head : detail
+ where
+  head   = screenHead "" w
+  detail = screenDetail "" w rect
+
+screenHead :: String -> WindowScreen -> String
+screenHead color (W.Screen w sid sd) =
+  "Screen: " ++ show (fromIntegral sid :: Int) ++ " Workspace: " ++ W.tag w
+
+screenDetail :: String -> WindowScreen -> [(Window, Rectangle)] -> [String]
+screenDetail color (W.Screen _ _ (SD (Rectangle x y w h))) rects
+  | w == 0 || h == 0
+  = []
+  | otherwise
+  = [ [ res ! (i, j) | i <- [x .. x + w - 1] ] | j <- [y .. y + h - 1] ]
+ where
+  init = array
+    ((x, y), (x + w - 1, y + h - 1))
+    [ ((i, j), ' ') | i <- [x .. x + w - 1], j <- [y .. y + h - 1] ]
+  f a t = a // windowDetail t
+  res = foldl f init rects
+
+windowDetail :: (Window, Rectangle) -> [((Int, Int), Char)]
+windowDetail (ws, Rectangle x y w h)
+  | w == 0 || h == 0 = []
+  | h == 1           = up
+  | h == 2           = up ++ down
+  | h >= 3 && w == 1 = up ++ down ++ left
+  | h >= 3 && w == 2 = up ++ down ++ left ++ right
+  | otherwise        = up ++ down ++ left ++ right ++ name
+ where
+  up    = [ ((x + i, y), '▄') | i <- [0 .. w - 1] ]
+  down  = [ ((x + i, y + h - 1), '▀') | i <- [0 .. w - 1] ]
+  left  = [ ((x, y + i), '▌') | i <- [1 .. h - 2] ]
+  right = [ ((x + w - 1, y + i), '▐') | i <- [1 .. h - 2] ]
+  name  = zip [ (x + 1, y + i) | i <- [1 .. w - 2] ] ws
 
 printScreen :: TX ()
 printScreen = do
@@ -50,8 +89,8 @@ printScreen = do
         viewrect = screenRect $ W.screenDetail w
     (rs, ml') <- runLayout wsp { W.stack = tiled } viewrect
     updateLayout n ml'
-    return rs
-  io $ print $ show rects
+    return (rs, w)
+  io $ putStrLn $ intercalate "\n" $ fmap screenString rects
 
 updateLayout :: WorkspaceId -> Maybe (Layout Window) -> TX ()
 updateLayout i ml = whenJust ml $ \l -> runOnWorkSpaces

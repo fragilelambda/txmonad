@@ -8,6 +8,7 @@
 module TXMonad.Core
   ( TX
   , WindowSet
+  , WindowScreen
   , WindowSpace
   , WorkspaceId
   , Window
@@ -43,7 +44,6 @@ import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.Default
 import qualified Data.Map                      as M
-import           Data.Matrix
 import           Data.Maybe                     ( fromMaybe
                                                 , isJust
                                                 )
@@ -57,8 +57,6 @@ data TXState = TXState
 
 data TXConf = TXConf
   { config        :: TXConfig Layout
-  , normalBorder  :: Char
-  , focusedBorder :: Char
   , keyActions    :: M.Map Event (TX ())
   }
 
@@ -79,6 +77,8 @@ data Rectangle = Rectangle
 
 type WindowSet
   = StackSet WorkspaceId (Layout Window) Window ScreenId ScreenDetail
+
+type WindowScreen = Screen WorkspaceId (Layout Window) Window ScreenId ScreenDetail
 
 type WindowSpace = Workspace WorkspaceId (Layout Window) Window
 
