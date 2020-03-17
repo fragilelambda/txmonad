@@ -49,7 +49,7 @@ screenString (rect, w) = (head, detail)
 
 screenHead :: WindowScreen -> String
 screenHead (W.Screen w sid sd) =
-  "Screen: " ++ show (fromIntegral sid :: Int) ++ " Workspace: " ++ W.tag w
+  "Screen: " ++ show (1 + fromIntegral sid :: Int) ++ " Workspace: " ++ W.tag w
 
 screenDetail :: WindowScreen -> [(Window, Rectangle)] -> [String]
 screenDetail (W.Screen _ _ (SD (Rectangle x y w h))) rects
