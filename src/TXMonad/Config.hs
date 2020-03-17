@@ -15,6 +15,7 @@ import           TXMonad.Core                  as TXMonad
 import           Data.Default
 import qualified Data.Map                      as M
 import           Data.Monoid
+import System.Exit
 import qualified TXMonad.Core                  as TXMonad
                                                 ( handleEventHook
                                                 , keys
@@ -53,6 +54,8 @@ keys conf =
        , ("l" , sendMessage Expand)
        , ("m" , windows W.focusMaster)
        , ("sm", windows W.swapMaster)
+       , ("h" , helpCommand help) 
+       , ("q" , io exitSuccess)
        ]
     ++
     -- mod-[1..9] %! Switch to workspace N
@@ -75,5 +78,41 @@ instance (a ~ Choose Tall (Choose (Mirror Tall) Full)) =>
                  , TXMonad.layoutHook      = layout
                  , TXMonad.keys            = keys
                  , TXMonad.handleEventHook = handleEventHook
-                 , TXMonad.sd              = [SD (Rectangle 0 0 80 45), SD (Rectangle 0 0 40 30)]
+                 , TXMonad.sd              = [SD (Rectangle 0 0 80 30), SD (Rectangle 0 0 40 20)]
                  }
+
+-- | Finally, a copy of the default bindings in simple textual tabular format.
+help :: String
+help = unlines [
+    "-- launching and killing programs",
+    "a        Add one focused window",
+    "x        Close the focused window",
+    "n        Rotate through the available layout algorithms",
+    "",
+    "-- move focus up or down the window stack",
+    "j        Move focus to the next window",
+    "k        Move focus to the previous window",
+    "m        Move focus to the master window",
+    "",
+    "-- modifying the window order",
+    "sj       Swap the focused window with the next window",
+    "sk       Swap the focused window with the previous window",
+    "sm       Swap the focused window and the master window",
+    "",
+    "-- resizing the master/slave ratio",
+    "h        Shrink the master area",
+    "l        Expand the master area",
+    "",
+    "",
+    "-- increase or decrease number of windows in the master area",
+    "comma  (,)   Increment the number of windows in the master area",
+    "period (.)   Deincrement the number of windows in the master area",
+    "",
+    "-- quit, or restart",
+    "q        Quit txmonad",
+    "",
+    "-- Workspaces & screens",
+    "j[1..9]         Switch to workSpace N",
+    "sj[1..9]        Move client to workspace N",
+    "j{w,e,r}        Switch to screen 1, 2, or 3",
+    "sj{w,e,r}       Move client to screen 1, 2, or 3"]

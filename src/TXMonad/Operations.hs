@@ -11,6 +11,8 @@ import           Data.List                      ( find
                                                 , (\\)
                                                 )
 import           Data.Monoid                    ( Endo(..) )
+import           System.Console.ANSI
+import           System.IO
 
 import           Control.Monad.Reader
 import           Control.Monad.State
@@ -39,18 +41,18 @@ unmanage = windows . W.delete
 windows :: (WindowSet -> WindowSet) -> TX ()
 windows = modifyWindowSet
 
-screenString :: ([(Window, Rectangle)], WindowScreen) -> String
-screenString (rect, w) = unlines $ head : detail
+screenString :: ([(Window, Rectangle)], WindowScreen) -> (String, [String])
+screenString (rect, w) = (head, detail)
  where
-  head   = screenHead "" w
-  detail = screenDetail "" w rect
+  head   = screenHead w
+  detail = screenDetail w rect
 
-screenHead :: String -> WindowScreen -> String
-screenHead color (W.Screen w sid sd) =
+screenHead :: WindowScreen -> String
+screenHead (W.Screen w sid sd) =
   "Screen: " ++ show (fromIntegral sid :: Int) ++ " Workspace: " ++ W.tag w
 
-screenDetail :: String -> WindowScreen -> [(Window, Rectangle)] -> [String]
-screenDetail color (W.Screen _ _ (SD (Rectangle x y w h))) rects
+screenDetail :: WindowScreen -> [(Window, Rectangle)] -> [String]
+screenDetail (W.Screen _ _ (SD (Rectangle x y w h))) rects
   | w == 0 || h == 0
   = []
   | otherwise
@@ -75,7 +77,59 @@ windowDetail (ws, Rectangle x y w h)
   down  = [ ((x + i, y + h - 1), '▀') | i <- [0 .. w - 1] ]
   left  = [ ((x, y + i), '▌') | i <- [1 .. h - 2] ]
   right = [ ((x + w - 1, y + i), '▐') | i <- [1 .. h - 2] ]
-  name  = zip [ (x + 1, y + i) | i <- [1 .. w - 2] ] ws
+  name  = zip [ (x + i, y + 1) | i <- [1 .. w - 2] ] ws
+
+printFocusLine :: Int -> Int -> Color -> String -> IO ()
+printFocusLine x w c s = do
+  setSGR [Reset]
+  putStr left
+  setSGR [SetColor Foreground Vivid c]
+  putStr mid
+  setSGR [Reset]
+  putStrLn right
+ where
+  (left, midright) = splitAt x s
+  (mid , right   ) = splitAt w midright
+
+printFocus :: (String, [String]) -> Rectangle -> Color -> IO ()
+printFocus (head, detail) (Rectangle x y w h) color = do
+  setSGR [SetColor Foreground Vivid color]
+  putStrLn head
+  setSGR [Reset]
+  putStr $ unlines up
+  printMid
+  setSGR [Reset]
+  putStr $ unlines down
+ where
+  (up , middown) = splitAt y detail
+  (mid, down   ) = splitAt h middown
+  printMid       = mapM_ (printFocusLine x w color) mid
+
+printDefault :: [(String, [String])] -> IO ()
+printDefault = mapM_ printAll
+ where
+  printAll (h, d) = do
+    setSGR [Reset]
+    putStrLn $ unlines (h : d)
+
+printAllWithFocus :: [(String, [String])] -> Maybe Rectangle -> Color -> IO ()
+printAllWithFocus res            Nothing  _     = printDefault res
+printAllWithFocus (res : allRes) (Just r) color = do
+  printFocus res r color
+  printDefault allRes
+
+helpCommand :: String -> TX()
+helpCommand s = io $ do
+  setCursorPosition 0 0
+  clearScreen
+  putStrLn s
+  inputLine
+  
+inputLine :: IO ()
+inputLine = do
+  putStrLn "press h for help"
+  putStr "txmonad> "
+  hFlush stdout
 
 printScreen :: TX ()
 printScreen = do
@@ -90,7 +144,14 @@ printScreen = do
     (rs, ml') <- runLayout wsp { W.stack = tiled } viewrect
     updateLayout n ml'
     return (rs, w)
-  io $ putStrLn $ intercalate "\n" $ fmap screenString rects
+  let fw    = W.peek ws
+      frect = do
+        fwid <- fw
+        snd <$> find ((== fwid) . fst) (fst $ head rects)
+  io (setCursorPosition 0 0)
+  io clearScreen
+  io $ printAllWithFocus (fmap screenString rects) frect Red
+  io inputLine
 
 updateLayout :: WorkspaceId -> Maybe (Layout Window) -> TX ()
 updateLayout i ml = whenJust ml $ \l -> runOnWorkSpaces
