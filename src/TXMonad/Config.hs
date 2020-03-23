@@ -9,6 +9,7 @@ where
 import           TXMonad.Core                  as TXMonad
                                          hiding ( handleEventHook
                                                 , keys
+                                                , screenEventHook
                                                 , workspaces
                                                 )
 
@@ -19,6 +20,7 @@ import           System.Exit
 import qualified TXMonad.Core                  as TXMonad
                                                 ( handleEventHook
                                                 , keys
+                                                , screenEventHook
                                                 , workspaces
                                                 )
 import           TXMonad.Layout
@@ -30,6 +32,10 @@ workspaces = map show [1 .. 9 :: Int]
 
 handleEventHook :: Event -> TX All
 handleEventHook _ = return (All True)
+
+screenEventHook :: Event -> TX All
+screenEventHook "h" = return (All False)
+screenEventHook _   = return (All True)
 
 layout = tiled ||| Mirror tiled ||| Full
  where
@@ -75,11 +81,18 @@ keys conf =
 instance (a ~ Choose Tall (Choose (Mirror Tall) Full)) =>
          Default (TXConfig a) where
   def = TXConfig
-    { TXMonad.workspaces      = workspaces
-    , TXMonad.layoutHook      = layout
-    , TXMonad.keys            = keys
-    , TXMonad.handleEventHook = handleEventHook
+    { TXMonad.workspaces         = workspaces
+    , TXMonad.layoutHook         = layout
+    , TXMonad.keys               = keys
+    , TXMonad.handleEventHook    = handleEventHook
+    , TXMonad.screenEventHook    = screenEventHook
     , TXMonad.sd = [SD (Rectangle 0 0 80 20), SD (Rectangle 0 0 40 20)]
+    , TXMonad.normalBorderColor  = "Blue"
+    , TXMonad.focusedBorderColor = "Red"
+    , TXMonad.upBorder           = '▄'
+    , TXMonad.downBorder         = '▀'
+    , TXMonad.leftBorder         = '▌'
+    , TXMonad.rightBorder        = '▐'
     }
 
 -- | Finally, a copy of the default bindings in simple textual tabular format.
@@ -104,10 +117,9 @@ help = unlines
   , "h        Shrink the master area"
   , "l        Expand the master area"
   , ""
-  , ""
   , "-- increase or decrease number of windows in the master area"
-  , "comma  (,)   Increment the number of windows in the master area"
-  , "period (.)   Deincrement the number of windows in the master area"
+  , "comma  (,)      Increment the number of windows in the master area"
+  , "period (.)      Deincrement the number of windows in the master area"
   , ""
   , "-- quit, or restart"
   , "q               Quit txmonad"

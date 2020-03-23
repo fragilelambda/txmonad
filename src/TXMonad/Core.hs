@@ -56,16 +56,23 @@ data TXState = TXState
   } deriving (Show)
 
 data TXConf = TXConf
-  { config        :: TXConfig Layout
-  , keyActions    :: M.Map Event (TX ())
+  { config     :: TXConfig Layout
+  , keyActions :: M.Map Event (TX ())
   }
 
 data TXConfig l = TXConfig
-  { layoutHook      :: l Window
-  , workspaces      :: [String]
-  , keys            :: TXConfig Layout -> M.Map Event (TX ())
-  , sd              :: [ScreenDetail]
-  , handleEventHook :: Event -> TX All
+  { layoutHook         :: l Window
+  , workspaces         :: [String]
+  , keys               :: TXConfig Layout -> M.Map Event (TX ())
+  , sd                 :: [ScreenDetail]
+  , handleEventHook    :: Event -> TX All
+  , screenEventHook    :: Event -> TX All
+  , normalBorderColor  :: String
+  , focusedBorderColor :: String
+  , upBorder           :: Char
+  , downBorder         :: Char
+  , leftBorder         :: Char
+  , rightBorder        :: Char
   }
 
 data Rectangle = Rectangle
@@ -78,7 +85,8 @@ data Rectangle = Rectangle
 type WindowSet
   = StackSet WorkspaceId (Layout Window) Window ScreenId ScreenDetail
 
-type WindowScreen = Screen WorkspaceId (Layout Window) Window ScreenId ScreenDetail
+type WindowScreen
+  = Screen WorkspaceId (Layout Window) Window ScreenId ScreenDetail
 
 type WindowSpace = Workspace WorkspaceId (Layout Window) Window
 

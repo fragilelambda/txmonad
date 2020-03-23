@@ -6,9 +6,9 @@ module TXMonad.Main
   )
 where
 
+import           Control.Monad                  ( when )
 import           Control.Monad.Reader
 import           Control.Monad.State
-import Control.Monad (when)
 
 import qualified Data.Map                      as M
 import           Data.Monoid                    ( getAll )
@@ -30,7 +30,7 @@ launch initxmc = do
       cf = TXConf { config = xmc, keyActions = keys xmc xmc }
       st = TXState { windowset = initialWinset, uniqueCnt = 0 }
   runTX cf st $ do
-    io inputLine
+    printScreen
     forever $ prehandle =<< io getLine
   return ()
   where prehandle e = handleWithHook e
@@ -38,8 +38,9 @@ launch initxmc = do
 handleWithHook :: Event -> TX ()
 handleWithHook e = do
   evHook <- asks (handleEventHook . config)
+  scHook <- asks (screenEventHook . config)
   whenTX (userCodeDef True $ getAll `fmap` evHook e) (handle e)
-  when (e /= "h") printScreen
+  whenTX (userCodeDef True $ getAll `fmap` scHook e) printScreen
 
 handle :: Event -> TX ()
 handle e = do
