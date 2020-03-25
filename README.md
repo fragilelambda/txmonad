@@ -1,11 +1,11 @@
 # txmonad: A toy xmonad
 [txmonad]() is a toy [xmonad](https://github.com/xmonad/xmonad), which is a wonderful tiling window manager written in Haskell. txmond simulates a part of xmonad major feature in the cli mode. The purpose of starting this project is that xmonad is a wonderful tiling window manager, as well as a famous Haskell product level code tutorial, but xmonad is tightly coupling with X11, which makes it harder for Haskell beginners from different platform/system play around.
 
-Here, txmonad imitates xmond architecture and type design to offer a playground for Haskell beginners. So you can play, change and run the code to see the response swiftly.
+Here, txmonad imitates xmonad architecture and type design to offer a playground for Haskell beginners. So you can play, change and run the code to see the response swiftly.
 
 ## Quick Start
 We use [stack](https://github.com/commercialhaskell/stack) to build the project
-After install stack, simplely run under the project folder:
+After install stack, simply run under the project folder:
 ```
 stack build
 stack exec txmonad-exe
@@ -30,4 +30,4 @@ Press h to view more supported command
 ## Future develop plan
 * user configurable config and custom layout algorithm.
 * quick-check support
-* A tutoral for haskell beginners
+* A tutorial for haskell beginners
